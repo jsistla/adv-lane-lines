@@ -199,3 +199,167 @@ class Transformation:
         self.right_line.coeff_history[:, 0] = alpha * self.right_line.coeff_history[:, 0] + \
                                               (1-alpha)*(mean + np.array([0,0, 1.8288], dtype=np.uint8))
 """
+class LaneLines():
+    def __init__(self):
+        """"""
+
+        self.detected = False
+
+        self.left_fit = None
+        self.right_fit = None
+
+        self.MAX_BUFFER_SIZE = 12
+
+        self.buffer_index = 0
+        self.iter_counter = 0
+
+        self.buffer_left = np.zeros((self.MAX_BUFFER_SIZE, 720))
+        self.buffer_right = np.zeros((self.MAX_BUFFER_SIZE, 720))
+
+        self.perspective = self._build_perspective_transformer()
+        self.calibrator = self._build_camera_calibrator()
+
+@staticmethod
+    def _build_perspective_transformer():
+        """
+        :return:
+        """
+        corners = np.float32([[253, 697], [585, 456], [700, 456], [1061, 690]])
+        new_top_left = np.array([corners[0, 0], 0])
+        new_top_right = np.array([corners[3, 0], 0])
+        offset = [50, 0]
+
+        src = np.float32([corners[0], corners[1], corners[2], corners[3]])
+        dst = np.float32([corners[0] + offset, new_top_left + offset, new_top_right - offset, corners[3] - offset])
+
+        perspective = PerspectiveTransformer(src, dst)
+        return perspective
+
+    @staticmethod
+    def _build_camera_calibrator():
+        """
+        :return:
+        """
+        calibration_images = glob.glob('../camera_cal/calibration*.jpg')
+        calibrator = CameraCalibrator(calibration_images,
+                                      9, 6, use_existing_camera_coefficients=True)
+        return calibrator
+
+def base_lane_extractor(self, binary_warped):
+        """
+        :param binary_warped:
+        :return:
+        """
+        histogram = np.sum(binary_warped[binary_warped.shape[0] / 2:, :, 0], axis=0)
+
+        # get midpoint of the histogram
+        midpoint = np.int(histogram.shape[0] / 2)
+
+        # get left and right halves of the histogram
+        leftx_base = np.argmax(histogram[:midpoint])
+        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+        # based on number of events, we calculate hight of a window
+        nwindows = 9
+        window_height = np.int(binary_warped.shape[0] / nwindows)
+
+        # Extracts x and y coordinates of non-zero pixels
+        nonzero = binary_warped.nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+
+        # Set current x coordinated for left and right
+        leftx_current = leftx_base
+        rightx_current = rightx_base
+
+        margin = 75
+        min_num_pixels = 35
+
+        # save pixel ids in these two lists
+        left_lane_inds = []
+        right_lane_inds = []
+
+        for window in range(nwindows):
+            win_y_low = binary_warped.shape[0] - (window + 1) * window_height
+            win_y_high = binary_warped.shape[0] - window * window_height
+
+            win_xleft_low = leftx_current - margin
+            win_xleft_high = leftx_current + margin
+            win_xright_low = rightx_current - margin
+            win_xright_high = rightx_current + margin
+
+            good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (
+                nonzerox < win_xleft_high)).nonzero()[0]
+            good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (
+                nonzerox < win_xright_high)).nonzero()[0]
+
+            # Append these indices to the lists
+            left_lane_inds.append(good_left_inds)
+            right_lane_inds.append(good_right_inds)
+
+            if len(good_left_inds) > min_num_pixels:
+                leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
+            if len(good_right_inds) > min_num_pixels:
+                rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+
+        # Concatenate the arrays of indices
+        left_lane_inds = np.concatenate(left_lane_inds)
+        right_lane_inds = np.concatenate(right_lane_inds)
+
+        # Extract left and right line pixel positions
+        leftx = nonzerox[left_lane_inds]
+        lefty = nonzeroy[left_lane_inds]
+        rightx = nonzerox[right_lane_inds]
+        righty = nonzeroy[right_lane_inds]
+
+        # Fit a second order polynomial to each
+        self.left_fit = np.polyfit(lefty, leftx, 2)
+        self.right_fit = np.polyfit(righty, rightx, 2)
+
+        fity = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
+        fit_leftx = self.left_fit[0] * fity ** 2 + self.left_fit[1] * fity + self.left_fit[2]
+        fit_rightx = self.right_fit[0] * fity ** 2 + self.right_fit[1] * fity + self.right_fit[2]
+
+        self.detected = True
+
+        return fit_leftx, fit_rightx
+
+    def advance_lane_extractor(self, binary_warped):
+        """
+        :param binary_warped:
+        :return:
+        """
+        # Assume you now have a new warped binary image
+        # from the next frame of video (also called "binary_warped")
+        # It's now much easier to find line pixels!
+        nonzero = binary_warped.nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+
+        margin = 75
+
+        left_lane_inds = (
+            (nonzerox > (
+                self.left_fit[0] * (nonzeroy ** 2) + self.left_fit[1] * nonzeroy + self.left_fit[2] - margin)) & (
+                nonzerox < (
+                    self.left_fit[0] * (nonzeroy ** 2) + self.left_fit[1] * nonzeroy + self.left_fit[2] + margin)))
+        right_lane_inds = (
+            (nonzerox > (
+                self.right_fit[0] * (nonzeroy ** 2) + self.right_fit[1] * nonzeroy + self.right_fit[2] - margin)) & (
+                nonzerox < (
+                    self.right_fit[0] * (nonzeroy ** 2) + self.right_fit[1] * nonzeroy + self.right_fit[2] + margin)))
+
+        # Again, extract left and right line pixel positions
+        leftx = nonzerox[left_lane_inds]
+        lefty = nonzeroy[left_lane_inds]
+        rightx = nonzerox[right_lane_inds]
+        righty = nonzeroy[right_lane_inds]
+        # Fit a second order polynomial to each
+        self.left_fit = np.polyfit(lefty, leftx, 2)
+        self.right_fit = np.polyfit(righty, rightx, 2)
+        # Generate x and y values for plotting
+        ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
+        left_fitx = self.left_fit[0] * ploty ** 2 + self.left_fit[1] * ploty + self.left_fit[2]
+        right_fitx = self.right_fit[0] * ploty ** 2 + self.right_fit[1] * ploty + self.right_fit[2]
+
+        return left_fitx, right_fitx
