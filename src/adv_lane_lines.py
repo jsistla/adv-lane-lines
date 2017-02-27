@@ -14,10 +14,10 @@ class CameraCalibrate:
                  
         """
         This class encapsulates camera calibration processpipe. When creating an instance of
-        CameraCalibrator class, 
-        :param calibration_images: image used for camera calibration
-        :param rows: number of horizontal corners in calibration images
-        :param col:  number of vertical corners in calibration images
+        CameraCalibrate class, 
+        :calibration_images: image used for camera calibration
+        :rows: number of horizontal corners in calibration images
+        :col:  number of vertical corners in calibration images
         """
         self.calibration_images = calibration_images
         self.rows = rows
@@ -31,8 +31,7 @@ class CameraCalibrate:
     def _calibrate_camera(self):
         """
         Camera calibrate abstraction function
-        :return:
-            Camera calibration coefficients as a python dictionary
+        This returns Camera calibration coefficients as a python dictionary
         """
         object_point = np.zeros((self.rows * self.col, 3), np.float32)
         object_point[:, :2] = np.mgrid[0:self.rows, 0:self.col].T.reshape(-1, 2)
@@ -57,8 +56,8 @@ class CameraCalibrate:
 
     def undistort(self, image):
         """
-        :param image:
-        :return:
+        Takes original image and returns an output (corrected) image that has the same size and type as original image
+        
         """
 
         if not os.path.exists(CAMERA_CALIBRATION_PICKLE_FILE):
@@ -89,6 +88,13 @@ class CameraCalibrate:
             cv2.imwrite(dest_path, undistorted_image)
 """
 class Transformation:
+    """
+        This class encapsulates PerspectiveTransform.
+        Calculates a perspective transform from four pairs of the corresponding points.
+        transform and inverse_transform are wrappers on top of cv2.warpPerspective that 
+        applies a perspective transformation to an image
+        
+        """
     def __init__(self, src_points, dest_points):
 
         self.src_points = src_points
@@ -107,10 +113,6 @@ class Transformation:
         size = (src_image.shape[1], src_image.shape[0])
         return cv2.warpPerspective(src_image, self.M_inverse, size, flags=cv2.INTER_LINEAR)
 """
-    def draw_lines(img, vertices):
-        pts= np.int32([vertices])
-        cv2.polylines(img, pts, True, (0,0,255))
-
     def perspective_unwarp(img, Minv):
         img_size = (img.shape[0], img.shape[1])
         unwarped = cv2.warpPerspective(img, Minv, img_size, flags=cv2.INTER_LINEAR)
@@ -126,42 +128,32 @@ class Transformation:
 def denoise(image, threshold=4):
     """
     This method is used to reduce the noise of binary images.
-    :param image:
-        binary image (0 or 1)
-    :param threshold:
-        min number of neighbours with value
-    :return:
 
     """
-    #k = np.ones((5,5),np.float32)/25
-    k = np.array([[1, 1, 1],
-                  [1, 0, 1],
-                  [1, 1, 1]])
+    k = np.ones((5,5),np.float32)/25
+    #k = np.array([[1, 1, 1],
+    #              [1, 0, 1],
+    #             [1, 1, 1]])
     nb_neighbours = cv2.filter2D(image, ddepth=-1, kernel=k)
     image[nb_neighbours < threshold] = 0
     return image
 
-def binarize(image, gray_thresh=(20, 255), s_thresh=(170, 255), l_thresh=(30, 255), sobel_kernel=3):
+def image_binarize(image, gray_thresh=(20, 255), s_thresh=(170, 255), l_thresh=(30, 255), sobel_kernel=5):
     """
     This method extracts lane line pixels from road an image. Then create a minarized image where
     lane lines are marked in white color and rest of the image is marked in black color.
-    :param image:
+    :Takes inputs
         Source image
-    :param gray_thresh:
         Minimum and maximum gray color threshold
-    :param s_thresh:
         This tuple contains the minimum and maximum S color threshold in HLS color scheme
-    :param l_thresh:
         Minimum and maximum L color (after converting image to HLS color scheme)
-        threshold allowed in the source image
-    :param sobel_kernel:
         Size of the kernel use by the Sobel operation.
     :return:
         The binarized image where lane line pixels are marked in while color and rest of the image
         is marked in block color.
     """
 
-    # first we take a copy of the source iamge
+    #Makes a copy of original image
     image_copy = np.copy(image)
 
     # convert RGB image to HLS color space.
@@ -170,36 +162,37 @@ def binarize(image, gray_thresh=(20, 255), s_thresh=(170, 255), l_thresh=(30, 25
     s_channel = hls[:, :, 2]
     l_channel = hls[:, :, 1]
 
-    # Next, we apply Sobel operator in X direction and calculate scaled derivatives.
+    # apply Sobel operator in X direction and calculate scaled derivatives.
     sobelx = cv2.Sobel(l_channel, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     abs_sobelx = np.absolute(sobelx)
     scaled_sobel = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
 
-    # Next, we generate a binary image based on gray_thresh values.
+    # generate a binary image based on gray_thresh values.
     thresh_min = gray_thresh[0]
     thresh_max = gray_thresh[1]
     sobel_x_binary = np.zeros_like(scaled_sobel)
     sobel_x_binary[(scaled_sobel >= thresh_min) & (scaled_sobel <= thresh_max)] = 1
 
-    # Next, we generated a binary image using S component of our HLS color scheme and
+    # generate a binary image using S component of our HLS color scheme and
     # provided S threshold
     s_binary = np.zeros_like(s_channel)
     s_thresh_min = s_thresh[0]
     s_thresh_max = s_thresh[1]
     s_binary[(s_channel >= s_thresh_min) & (s_channel <= s_thresh_max)] = 1
 
-    # Next, we generated a binary image using S component of our HLS color scheme and
+    # generate a binary image using S component of our HLS color scheme and
     # provided S threshold
     l_binary = np.zeros_like(l_channel)
     l_thresh_min = l_thresh[0]
     l_thresh_max = l_thresh[1]
     l_binary[(l_channel >= l_thresh_min) & (l_channel <= l_thresh_max)] = 1
 
-    # finally, return the combined binary image
+    # return the combined binary image
     binary = np.zeros_like(sobel_x_binary)
     binary[((l_binary == 1) & (s_binary == 1) | (sobel_x_binary == 1))] = 1
     binary = 255 * np.dstack((binary, binary, binary)).astype('uint8')
 
+    # return the binary image with noise reduced.
     return denoise(binary)
 
 class LaneLines():
@@ -250,8 +243,10 @@ class LaneLines():
 
     def base_lane_finder(self, binary_warped):
         """
-        :param binary_warped:
-        :return:
+        This method take is binary warped image, uses sliding window to identify lane lines 
+        from the binary warped image and then uses a second order polynomial estimation technique
+        to calculate road curvature
+        
         """
         histogram = np.sum(binary_warped[binary_warped.shape[0] / 2:, :, 0], axis=0)
 
@@ -329,7 +324,7 @@ class LaneLines():
 
     def advance_lane_finder(self, binary_warped):
         """
-        :param binary_warped:
+        :binary_warped
         :return:
         """
         # Assume you now have a new warped binary image
@@ -367,17 +362,15 @@ class LaneLines():
 
         return left_fitx, right_fitx
 
-    def left_right_curve_road(self, image_size, left_x, right_x):
+    def left_right_curvature_road(self, image_size, left_x, right_x):
         """
         This method calculates left and right road curvature and off of the vehicle from the center
         of the lane
-        :param image_size:
+        :Takes inputs
             Size of the image
-        :param left_x:
             X coordinated of left lane pixels
-        :param right_x:
             X coordinated of right lane pixels
-        :return:
+        returns:
             Left and right curvatures of the lane and off of the vehicle from the center of the lane
         """
         # first we calculate the intercept points at the bottom of our image
@@ -420,11 +413,9 @@ class LaneLines():
     def fill_lane_lines(image, fit_left_x, fit_right_x):
         """
         This utility method highlights correct lane section on the road
-        :param image:
+        Takes input image and 
             On top of this image, my lane will be highlighted
-        :param fit_left_x:
             X coordinated of the left second order polynomial
-        :param fit_right_x:
             X coordinated of the right second order polynomial
         :return:
             The input image with highlighted lane line.
@@ -442,13 +433,8 @@ class LaneLines():
 
     def merge_images(self, binary_img, src_image):
         """
-        This utility method merges merges two images
-        :param binary_img:
-        Binary image with highlighted lane segment.
-        :param src_image:
-        The original image on top of it we are going to highlight lane segment.
-        :return:
-        The Original image with highlighted lane segment.
+        This utility method merges merges two images and returns Original image with highlighted lane segment
+        
         """
         copy_binary = np.copy(binary_img)
         copy_src_img = np.copy(src_image)
@@ -460,19 +446,14 @@ class LaneLines():
 
     def processpipe(self, image):
         """
-        This method takes an image as an input and produces an image with
-        1. Highlighted lane line
-        2. Left and right lane curvatures (in meters)
-        3. Vehicle offset of the center of the lane (in meters)
-        :param image:
-            Source image
-        :return:
-            Annotated image with lane line details
+        This method takes an image as an input and produces an image with Highlighted the lane line
+        Reports Left,right lane curvatures (in meters) and Vehicle deviation from center of the lane (in meters)
+
         """
         image = np.copy(image)
         undistorted_image = self.calibrator.undistort(image)
         warped_image = self.perspective.transform(undistorted_image)
-        binary_image = binarize(warped_image)
+        binary_image = image_binarize(warped_image)
 
         if self.detected:
             fit_leftx, fit_rightx = self.advance_lane_finder(binary_image)
@@ -498,10 +479,10 @@ class LaneLines():
         curvature_text = 'Left Curvature: {:.2f} m    Right Curvature: {:.2f} m'.format(left_curvature, right_curvature)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, curvature_text, (100, 50), font, 1, (221, 28, 119), 2)
+        cv2.putText(image, curvature_text, (100, 50), font, 1, (255, 255, 255), 2)
 
         deviation_info = 'Lane Deviation: {:.3f} m'.format(calculated_deviation)
-        cv2.putText(image, deviation_info, (100, 90), font, 1, (221, 28, 119), 2)
+        cv2.putText(image, deviation_info, (100, 90), font, 1, (255, 255, 255), 2)
 
         filled_image = self.fill_lane_lines(binary_image, ave_left, ave_right)
 
@@ -510,12 +491,12 @@ class LaneLines():
         return merged_image
 
 
-if __name__ == '__main__':
-    from moviepy.editor import VideoFileClip
+#if __name__ == '__main__':
+#    from moviepy.editor import VideoFileClip
 
-    line = LaneLines()
-    output_file = '../processpipeed_project_video.mp4'
-    input_file = '../project_video.mp4'
-    clip = VideoFileClip(input_file)
-    out_clip = clip.fl_image(line.processpipe)
-    out_clip.write_videofile(output_file, audio=False)
+#    line = LaneLines()
+#    output_file = '../processpipeed_project_video.mp4'
+#    input_file = '../project_video.mp4'
+#    clip = VideoFileClip(input_file)
+#    out_clip = clip.fl_image(line.processpipe)
+#    out_clip.write_videofile(output_file, audio=False)
