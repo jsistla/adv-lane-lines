@@ -163,9 +163,13 @@ clip = VideoFileClip(input_file)
 out_clip = clip.fl_image(line.process) 
 out_clip.write_videofile(output_file, audio=False)
 ```
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=9ciherslC9M">
+        <img src="https://img.youtube.com/vi/9ciherslC9M/0.jpg" alt="video output">
+    </a>
+</p>
 
 
-![Processed output video](https://img.youtube.com/vi/9ciherslC9M/0.jpg)](https://www.youtube.com/watch?v=9ciherslC9M)
 ### Conclusions and Future Directions
 
 This project took relatively a large amount of time when it compares to other (deep learning) projects. 
