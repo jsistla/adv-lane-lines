@@ -165,7 +165,7 @@ out_clip.write_videofile(output_file, audio=False)
 ```
 
 
-![Processed output video](https://www.youtube.com/watch?v=9ciherslC9M)
+![Processed output video](https://img.youtube.com/vi/9ciherslC9M/0.jpg)](https://www.youtube.com/watch?v=9ciherslC9M)
 ### Conclusions and Future Directions
 
 This project took relatively a large amount of time when it compares to other (deep learning) projects. 
