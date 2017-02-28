@@ -116,9 +116,7 @@ Both methods take a binary warped image (similar to one shown above) and produce
 
 The output of lane line extractor algorithm is visualize in following figure.
 
-<p align="center">
- <img src="./images/lane_extracted.png">
-</p>
+
 ![Lane-extracted](https://github.com/jsistla/adv-lane-lines/blob/master/images/lane-extracted.png)
 
 When it comes to video processing we start (with the very first image in the video) with **``basic_lane_finder(self, binary_warped``** method.
@@ -166,12 +164,8 @@ out_clip = clip.fl_image(line.process)
 out_clip.write_videofile(output_file, audio=False)
 ```
 
-<p align="center">
-    <a href="https://youtu.be/9ciherslC9M">
-        <img src="https://youtu.be/9ciherslC9M/0.jpg" alt="video output">
-    </a>
-</p>
 
+![Processed output video](https://www.youtube.com/watch?v=9ciherslC9M)
 ### Conclusions and Future Directions
 
 This project took relatively a large amount of time when it compares to other (deep learning) projects. 
