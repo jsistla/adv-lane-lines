@@ -119,6 +119,7 @@ The output of lane line extractor algorithm is visualize in following figure.
 <p align="center">
  <img src="./images/lane_extracted.png">
 </p>
+![Lane-extracted](https://github.com/jsistla/adv-lane-lines/blob/master/images/lane-extracted.png)
 
 When it comes to video processing we start (with the very first image in the video) with **``basic_lane_finder(self, binary_warped``** method.
 Once we have identified lane lines we moves to the **``advance_lane_finder(self, binary_warped)``** which doesn't blindly search entire image but 
