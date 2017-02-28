@@ -1,5 +1,5 @@
 # Self-Driving Car Engineer Nanodegree
-## Computer Vision: Advanced Lane Finding
+##  Advanced Lane Finding
 
 ### Overview
 
@@ -21,9 +21,11 @@ Producing output images and videos with highlighted lane lines.
 The input of pipeline would be images or video clips. 
 Input images or videos will go through various pipeline stages and produce annotated video and images as given below.
 
-Image 
-------------
-![output-image](./images/output-image.png)
+
+<p align="center">
+ <img src="./images/pipeline-processed.png">
+</p>
+
 
 
 Following here i am  describing my pipeline stages starting from the Camera Calibration. The sample input and output of the Camera Calibration pipeline stage is given below.
@@ -151,7 +153,7 @@ plt.imshow(output_image)
 plt.show()
 ```
 <p align="center">
- <img src="./images/image_output.png">
+ <img src="./images/pipeline-processed.png">
 </p>
 
 ```python
