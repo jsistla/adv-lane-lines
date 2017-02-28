@@ -26,8 +26,7 @@ Input images or videos will go through various pipeline stages and produce annot
  <img src="./images/pipeline-processed.png">
 </p>
 
-
-
+![example output image](https://github.com/jsistla/adv-lane-lines/blob/master/images/pipeline-processed.png)
 Following here i am  describing my pipeline stages starting from the Camera Calibration. The sample input and output of the Camera Calibration pipeline stage is given below.
 
 ### Camera Calibration
