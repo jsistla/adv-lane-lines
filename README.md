@@ -26,7 +26,7 @@ Input images or videos will go through various pipeline stages and produce annot
  <img src="./images/pipeline-processed.png">
 </p>
 
-![example output image](https://github.com/jsistla/adv-lane-lines/blob/master/images/pipeline-processed.png)
+
 Following here i am  describing my pipeline stages starting from the Camera Calibration. The sample input and output of the Camera Calibration pipeline stage is given below.
 
 ### Camera Calibration
@@ -117,7 +117,7 @@ Both methods take a binary warped image (similar to one shown above) and produce
 The output of lane line extractor algorithm is visualize in following figure.
 
 <p align="center">
- <img src="./images/lane_pixels.png">
+ <img src="./images/lane_extracted.png">
 </p>
 
 When it comes to video processing we start (with the very first image in the video) with **``basic_lane_finder(self, binary_warped``** method.
