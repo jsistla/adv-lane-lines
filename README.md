@@ -18,6 +18,10 @@ Calculating road left and right lane curvature
 
 Producing output images and videos with highlighted lane lines.
 
+<p align="center">
+ <img src="./images/pipeline.png">
+</p>
+
 The input of pipeline would be images or video clips. 
 Input images or videos will go through various pipeline stages and produce annotated video and images as given below.
 
