@@ -168,8 +168,8 @@ out_clip = clip.fl_image(line.process)
 out_clip.write_videofile(output_file, audio=False)
 ```
 <p align="center">
-    <a href="https://www.youtube.com/watch?v=9ciherslC9M">
-        <img src="https://img.youtube.com/vi/9ciherslC9M/0.jpg" alt="video output">
+    <a href="https://www.youtube.com/watch?v=Lu3whq2l2eA">
+        <img src="https://img.youtube.com/vi/Lu3whq2l2eA/0.jpg" alt="video output">
     </a>
 </p>
 
