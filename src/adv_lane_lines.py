@@ -10,7 +10,7 @@ CAMERA_CALIBRATION_PICKLE_FILE = '../camera_cal/calibration_pickle.p'
 UNDISTORTED_OUTPUT_IMAGES = '../output_images/camera_cal/'
 
 class CameraCalibrate:
-    def __init__(self, calibration_images, rows, col, use_existing_camera_coefficients=True):
+    def __init__(self, calibration_images, rows, col):
                  
         """
         This class encapsulates camera calibration processpipe. When creating an instance of
@@ -130,15 +130,15 @@ def denoise(image, threshold=4):
     This method is used to reduce the noise of binary images.
 
     """
-    k = np.ones((5,5),np.float32)/25
-    #k = np.array([[1, 1, 1],
-    #              [1, 0, 1],
-    #             [1, 1, 1]])
+    #k = np.ones((5,5),np.float32)/25
+    k = np.array([[1, 1, 1],
+                  [1, 0, 1],
+                  [1, 1, 1]])
     nb_neighbours = cv2.filter2D(image, ddepth=-1, kernel=k)
     image[nb_neighbours < threshold] = 0
     return image
 
-def image_binarize(image, gray_thresh=(20, 255), s_thresh=(170, 255), l_thresh=(30, 255), sobel_kernel=5):
+def image_binarize(image, gray_thresh=(20, 255), s_thresh=(170, 255), l_thresh=(30, 255), sobel_kernel=3):
     """
     This method extracts lane line pixels from road an image. Then create a minarized image where
     lane lines are marked in white color and rest of the image is marked in black color.
@@ -237,8 +237,7 @@ class LaneLines():
         :return:
         """
         calibration_images = glob.glob('../camera_cal/calibration*.jpg')
-        calibrator = CameraCalibrate(calibration_images,
-                                      9, 6, use_existing_camera_coefficients=True)
+        calibrator = CameraCalibrate(calibration_images, 9, 6)
         return calibrator
 
     def base_lane_finder(self, binary_warped):
@@ -378,15 +377,15 @@ class LaneLines():
         right_c = self.right_fit[0] * image_size[0] ** 2 + self.right_fit[1] * image_size[0] + self.right_fit[2]
 
         # Next take the difference in pixels between left and right interceptor points
-        #width = right_c - left_c
-        #assert width > 0, 'Road width in pixel can not be negative'
+        width = right_c - left_c
+        assert width > 0, 'Road width in pixel can not be negative'
 
         # Since average highway lane line width in US is about 3.7m
         # Source: https://en.wikipedia.org/wiki/Lane#Lane_width
         # we calculate length per pixel in meters
 
-        xm_per_pix = 3.7 / 720
-        ym_per_pix = 30 / 700
+        xm_per_pix = 3.7 / width
+        ym_per_pix = 30 / width
 
         # Recalculate road curvature in X-Y space
         ploty = np.linspace(0, 719, num=720)
@@ -440,7 +439,7 @@ class LaneLines():
         copy_src_img = np.copy(src_image)
 
         copy_binary_pers = self.perspective.inverse_transform(copy_binary)
-        result = cv2.addWeighted(copy_src_img, 1, copy_binary_pers, 0.3, 0)
+        result = cv2.addWeighted(copy_src_img, 1, copy_binary_pers, 0.25, 0)
 
         return result
 
@@ -474,7 +473,7 @@ class LaneLines():
             ave_left = np.average(self.buffer_left, axis=0)
             ave_right = np.average(self.buffer_right, axis=0)
 
-        left_curvature, right_curvature, calculated_deviation = self.left_right_curve_road(image.shape, ave_left,
+        left_curvature, right_curvature, calculated_deviation = self.left_right_curvature_road(image.shape, ave_left,
                                                                                             ave_right)
         curvature_text = 'Left Curvature: {:.2f} m    Right Curvature: {:.2f} m'.format(left_curvature, right_curvature)
 
